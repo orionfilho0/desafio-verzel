@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ORGANIZER
+  CLIENT
+  GATE
+}
+
+enum ReservationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  EXPIRED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+
+  events       Event[]       @relation("OrganizerEvents")
+  reservations Reservation[]
+  tickets      Ticket[]
+}
+
+model Event {
+  id                String   @id @default(uuid())
+  title             String
+  description       String
+  category          String
+  eventDate         DateTime
+  location          String
+  capacity          Int
+  availableTickets  Int
+  price             Float
+  imageUrl          String?
+  tmdbId            Int?
+  createdAt         DateTime @default(now())
+
+  organizerId String
+  organizer   User   @relation("OrganizerEvents", fields: [organizerId], references: [id])
+
+  reservations Reservation[]
+  tickets      Ticket[]
+}
+
+model Reservation {
+  id        String            @id @default(uuid())
+  quantity  Int
+  total     Float
+  status    ReservationStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  tickets Ticket[]
+}
+
+model Ticket {
+  id        String       @id @default(uuid())
+  qrCode    String
+  code      String       @unique
+  status    TicketStatus @default(VALID)
+  createdAt DateTime     @default(now())
+
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
